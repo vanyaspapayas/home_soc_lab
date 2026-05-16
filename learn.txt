@@ -1,0 +1,3 @@
+DMZ in network
+Routing (nftables, firewall setup)
+Basic understandment of IPS/IDS, SIEM, NTA

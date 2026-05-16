@@ -1,0 +1,25 @@
+Add Database, connected to juice shop
+Add active directory
+Add file server
+Add mail server
+Add dns server
+Add zeek
+Add fail2ban to dmz
+
+
+Internet
+ └── Kali
+
+DMZ
+ ├── Nginx
+ ├── Juice Shop
+ ├── DVWA
+ └── PostgreSQL
+
+Corporate
+ ├── Wazuh
+ ├── Suricata
+ ├── Zeek
+ ├── File Server
+ ├── Windows Workstation
+ └── Active Directory
