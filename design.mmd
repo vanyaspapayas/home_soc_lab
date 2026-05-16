@@ -1,0 +1,25 @@
+flowchart TD
+    subgraph COR[Corporate Network 69.0.0.0/24]
+        SIEM[Wazuh or something else]
+        IDS[Suricata]
+        AD[Active Directory Maybe]
+    end
+    subgraph DZM[Dzm Network 69.69.0.0/24]
+        OWASP[Owasp Juice Shop]
+        NGINX[Nginx Reverse Proxy]
+    end
+    subgraph INT[Internet 70.0.0.0/24]
+        KALI[Kali Node
+        - hydra
+        - nmap
+        - metasploit
+        - other owasp techniques]
+    end
+    ROUTER[Router]
+
+    COR --> ROUTER
+    DZM --> ROUTER
+    ROUTER --> INT
+
+
+
