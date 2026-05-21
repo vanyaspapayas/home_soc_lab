@@ -1,0 +1,70 @@
+name: Corporate Network Simulation
+
+networks:
+  internet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 70.0.0.0/24
+          gateway: 70.0.0.2
+  dmz_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 69.69.0.0/24
+          gateway: 69.69.0.2
+  corp_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 69.0.0.0/24
+          gateway: 69.0.0.2
+
+services:
+  router:
+    build: ./router
+    container_name: router
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1
+    networks:
+      - internet
+      - dmz_net
+      - corp_net
+    volumes:
+      - ./router/nftables.conf:/etc/nftables.conf
+    command: 
+      - sh
+      - -c
+      - nft -f /etc/nftables.conf && sleep infinity
+  kali:
+    build: ./kali
+    container_name: kali
+    networks:
+      - internet
+    command: sleep infinity
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    networks:
+      - dmz_net
+  juice-shop:
+    image: bkimminich/juice-shop
+    container_name: juice-shop
+    networks:
+      - dmz_net
+    ports: 
+      - "3000:3000"
+  wazuh:
+    image: alpine:latest
+    container_name: wazuh
+    networks:
+      - corp_net
+    command: sleep infinity
+  suricata:
+    image: alpine:latest
+    container_name: suricata
+    networks:
+      - corp_net
+    command: sleep infinity
