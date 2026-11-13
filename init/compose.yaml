@@ -1,37 +1,60 @@
-name: Corporate Network Simulation
+name: attack_sim
 
 networks:
+  uplink:                       
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.99.0.0/24
+          gateway: 10.99.0.1
   internet:
     driver: bridge
+    driver_opts: 
+      com.docker.network.bridge.enable_ip_masquerade: "false"
     ipam:
       config:
-        - subnet: 70.0.0.0/24
-          gateway: 70.0.0.2
+        - subnet: 10.67.0.0/24
+          gateway: 10.67.0.1
   dmz_net:
     driver: bridge
+    driver_opts: 
+      com.docker.network.bridge.enable_ip_masquerade: "false"
     ipam:
       config:
-        - subnet: 69.69.0.0/24
-          gateway: 69.69.0.2
+        - subnet: 10.69.0.0/24
+          gateway: 10.69.0.1
   corp_net:
     driver: bridge
+    driver_opts: 
+      com.docker.network.bridge.enable_ip_masquerade: "false"
     ipam:
       config:
-        - subnet: 69.0.0.0/24
-          gateway: 69.0.0.2
+        - subnet: 10.70.0.0/24
+          gateway: 10.70.0.1
 
 services:
   router:
     build: ./router
     container_name: router
+    init: true
     cap_add:
       - NET_ADMIN
     sysctls:
       - net.ipv4.ip_forward=1
     networks:
-      - internet
-      - dmz_net
-      - corp_net
+      uplink:
+        gw_priority: 100
+        ipv4_address: 10.99.0.254
+        interface_name: "uplink"
+      internet:
+        ipv4_address: 10.67.0.254
+        interface_name: "int"
+      dmz_net:
+        ipv4_address: 10.69.0.254
+        interface_name: "dmz"
+      corp_net:
+        ipv4_address: 10.70.0.254
+        interface_name: corp
     volumes:
       - ./router/nftables.conf:/etc/nftables.conf
     command: 
@@ -41,30 +64,55 @@ services:
   kali:
     build: ./kali
     container_name: kali
+    hostname: kali
+    init: true
+    cap_add:
+      - NET_ADMIN
     networks:
-      - internet
-    command: sleep infinity
+      internet:
+        ipv4_address: 10.67.0.10
+    command: sh -c "ip route replace 10.69.0.0/24 via 10.67.0.254 && exec sleep infinity"
+
   nginx:
     image: nginx:alpine
     container_name: nginx
     networks:
-      - dmz_net
+      dmz_net:
+        ipv4_address: 10.69.0.10
+  nginx-gw:
+    image: alpine:latest
+    container_name: nginx-gw
+    cap_add:
+      - NET_ADMIN
+    network_mode: service:nginx
+    command: ip route replace default via 10.69.0.254
+
   juice-shop:
     image: bkimminich/juice-shop
     container_name: juice-shop
     networks:
-      - dmz_net
-    ports: 
+      dmz_net:
+        ipv4_address: 10.69.0.11
+    ports:
       - "3000:3000"
-  wazuh:
+
+  juice-shop-gw:
+    image: alpine:latest
+    container_name: juice-shop-gw
+    cap_add:
+      - NET_ADMIN
+    network_mode: service:juice-shop
+    command: ip route replace default via 10.69.0.254
+
+  wazuh: # to be replaced with elastic
     image: alpine:latest
     container_name: wazuh
     networks:
       - corp_net
     command: sleep infinity
+
   suricata:
     image: alpine:latest
     container_name: suricata
-    networks:
-      - corp_net
+    network_mode: service:router
     command: sleep infinity
